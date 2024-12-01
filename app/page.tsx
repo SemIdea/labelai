@@ -29,7 +29,7 @@ export default function Page() {
   const goToEdit = () => {
     setIgnoreReload(true);
     router.push("/edit");
-  }
+  };
 
   return (
     <main className="bg-zinc-900 w-screen h-screen flex justify-center items-center">

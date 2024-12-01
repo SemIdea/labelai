@@ -9,8 +9,15 @@ import LabelEditor from "@/components/LabelEditor";
 import BoxList from "@/components/BoxList";
 import Canvas from "@/components/Canvas";
 
+type ImageType = {
+  id: number;
+  url: string;
+  name: string;
+};
+
 export default function Page() {
-  const { images, boxes, setBoxes, labels, setLabels } = useFileContext();
+  const { images, setImages, boxes, setBoxes, labels, setLabels } =
+    useFileContext();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentBoxes, setCurrentBoxes] = useState<Box[] | null>(null);
   const [creatingBox, setCreatingBox] = useState(false);
@@ -26,12 +33,12 @@ export default function Page() {
     onOpenChange: toggleEditLabels,
   } = useDisclosure();
 
-  const [imageCoordinates, setImageCoordinates] = useState({
-    x1: 0,
-    y1: 0,
-    x2: 0,
-    y2: 0,
-  });
+  const [imageCoordinates, setImageCoordinates] = useState<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null>(null); // Allow null
 
   useEffect(() => {
     // prevent ctrl zoom
@@ -42,14 +49,19 @@ export default function Page() {
 
   useEffect(() => {
     if (!selectedImage) return;
+    const imageName = images.find((image) => image.url === selectedImage)?.name;
+    if (!imageName) return;
     setCurrentBoxes(
       boxes.filter(
-        (box) => box.imageId.toString() === crc32.str(selectedImage).toString()
+        (box) => box.imageId.toString() === crc32.str(imageName).toString()
       ) || []
     );
   }, [selectedImage, boxes]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    // Prevent text selection during box creation
+    document.body.style.userSelect = "none";
+
     const overlayCanvas = overlayCanvasRef.current;
     const backgroundCanvas = backgroundCanvasRef.current;
     if (!overlayCanvas || !backgroundCanvas) return;
@@ -60,7 +72,9 @@ export default function Page() {
     const clickX = e.clientX - bounding.left;
     const clickY = e.clientY - bounding.top;
 
+    // Ensure click is within image bounds
     if (
+      !imageCoordinates ||
       clickX < imageCoordinates.x1 ||
       clickX > imageCoordinates.x2 ||
       clickY < imageCoordinates.y1 ||
@@ -69,150 +83,167 @@ export default function Page() {
       return;
     }
 
-    for (const box of boxes) {
-      const { x1, y1, x2, y2 } = box.cords;
-      const minX = Math.min(x1, x2);
-      const maxX = Math.max(x1, x2);
-      const minY = Math.min(y1, y2);
-      const maxY = Math.max(y1, y2);
-      const radius = 5;
+    // Handle box resizing
+    if (currentBoxes) {
+      for (const box of currentBoxes) {
+        const { x1, y1, x2, y2 } = box.cords;
+        const minX = Math.min(x1, x2);
+        const maxX = Math.max(x1, x2);
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1, y2);
+        const radius = 5;
 
-      const corners = [
-        { x: minX, y: minY, name: "top-left" },
-        { x: maxX, y: minY, name: "top-right" },
-        { x: minX, y: maxY, name: "bottom-left" },
-        { x: maxX, y: maxY, name: "bottom-right" },
-        { x: (minX + maxX) / 2, y: minY, name: "top-middle" },
-        { x: (minX + maxX) / 2, y: maxY, name: "bottom-middle" },
-        { x: minX, y: (minY + maxY) / 2, name: "left-middle" },
-        { x: maxX, y: (minY + maxY) / 2, name: "right-middle" },
-      ];
+        const corners = [
+          { x: minX, y: minY, name: "top-left" },
+          { x: maxX, y: minY, name: "top-right" },
+          { x: minX, y: maxY, name: "bottom-left" },
+          { x: maxX, y: maxY, name: "bottom-right" },
+          { x: (minX + maxX) / 2, y: minY, name: "top-middle" },
+          { x: (minX + maxX) / 2, y: maxY, name: "bottom-middle" },
+          { x: minX, y: (minY + maxY) / 2, name: "left-middle" },
+          { x: maxX, y: (minY + maxY) / 2, name: "right-middle" },
+        ];
 
-      for (const corner of corners) {
-        const dx = clickX - corner.x;
-        const dy = clickY - corner.y;
-        if (dx * dx + dy * dy <= radius * radius && box.hover) {
-          const boxId = boxes.indexOf(box);
-          setMovingBox(true);
+        for (const corner of corners) {
+          const dx = clickX - corner.x;
+          const dy = clickY - corner.y;
+          if (dx * dx + dy * dy <= radius * radius && box.hover) {
+            const boxId = boxes.indexOf(box);
+            setMovingBox(true);
 
-          const onMouseMove = (e: MouseEvent) => {
-            const bounding = overlayCanvas.getBoundingClientRect();
-            if (!bounding) return;
+            const onMouseMove = (e: MouseEvent) => {
+              const bounding = overlayCanvas.getBoundingClientRect();
+              if (!bounding) return;
 
-            setBoxes((prevBoxes) => {
-              const updatedBoxes = [...prevBoxes];
-              const rect = updatedBoxes[boxId];
+              setBoxes((prevBoxes) => {
+                const updatedBoxes = [...prevBoxes];
+                const rect = updatedBoxes[boxId];
 
-              switch (corner.name) {
-                case "top-left":
-                  rect.cords.x1 = e.clientX - bounding.left;
-                  rect.cords.y1 = e.clientY - bounding.top;
-                  break;
-                case "top-right":
-                  rect.cords.x2 = e.clientX - bounding.left;
-                  rect.cords.y1 = e.clientY - bounding.top;
-                  break;
-                case "bottom-left":
-                  rect.cords.x1 = e.clientX - bounding.left;
-                  rect.cords.y2 = e.clientY - bounding.top;
-                  break;
-                case "bottom-right":
-                  rect.cords.x2 = e.clientX - bounding.left;
-                  rect.cords.y2 = e.clientY - bounding.top;
-                  break;
-                case "top-middle":
-                  rect.cords.y1 = e.clientY - bounding.top;
-                  break;
-                case "bottom-middle":
-                  rect.cords.y2 = e.clientY - bounding.top;
-                  break;
-                case "left-middle":
-                  rect.cords.x1 = e.clientX - bounding.left;
-                  break;
-                case "right-middle":
-                  rect.cords.x2 = e.clientX - bounding.left;
-                  break;
-                default:
-                  break;
-              }
+                switch (corner.name) {
+                  case "top-left":
+                    rect.cords.x1 = e.clientX - bounding.left;
+                    rect.cords.y1 = e.clientY - bounding.top;
+                    break;
+                  case "top-right":
+                    rect.cords.x2 = e.clientX - bounding.left;
+                    rect.cords.y1 = e.clientY - bounding.top;
+                    break;
+                  case "bottom-left":
+                    rect.cords.x1 = e.clientX - bounding.left;
+                    rect.cords.y2 = e.clientY - bounding.top;
+                    break;
+                  case "bottom-right":
+                    rect.cords.x2 = e.clientX - bounding.left;
+                    rect.cords.y2 = e.clientY - bounding.top;
+                    break;
+                  case "top-middle":
+                    rect.cords.y1 = e.clientY - bounding.top;
+                    break;
+                  case "bottom-middle":
+                    rect.cords.y2 = e.clientY - bounding.top;
+                    break;
+                  case "left-middle":
+                    rect.cords.x1 = e.clientX - bounding.left;
+                    break;
+                  case "right-middle":
+                    rect.cords.x2 = e.clientX - bounding.left;
+                    break;
+                  default:
+                    break;
+                }
 
-              // Ensure the box stays within the canvas boundaries
-              rect.cords.x1 = Math.max(
-                0,
-                Math.min(rect.cords.x1, overlayCanvas.width)
-              );
-              rect.cords.x2 = Math.max(
-                0,
-                Math.min(rect.cords.x2, overlayCanvas.width)
-              );
-              rect.cords.y1 = Math.max(
-                0,
-                Math.min(rect.cords.y1, overlayCanvas.height)
-              );
-              rect.cords.y2 = Math.max(
-                0,
-                Math.min(rect.cords.y2, overlayCanvas.height)
-              );
+                // Ensure the box stays within the canvas boundaries
+                rect.cords.x1 = Math.max(
+                  0,
+                  Math.min(rect.cords.x1, overlayCanvas.width)
+                );
+                rect.cords.x2 = Math.max(
+                  0,
+                  Math.min(rect.cords.x2, overlayCanvas.width)
+                );
+                rect.cords.y1 = Math.max(
+                  0,
+                  Math.min(rect.cords.y1, overlayCanvas.height)
+                );
+                rect.cords.y2 = Math.max(
+                  0,
+                  Math.min(rect.cords.y2, overlayCanvas.height)
+                );
 
-              return updatedBoxes;
-            });
-          };
+                return updatedBoxes;
+              });
+            };
 
-          const onMouseUp = () => {
-            window.removeEventListener("mousemove", onMouseMove);
-            window.removeEventListener("mouseup", onMouseUp);
+            const onMouseUp = () => {
+              window.removeEventListener("mousemove", onMouseMove);
+              window.removeEventListener("mouseup", onMouseUp);
 
-            setBoxes((prevBoxes) => {
-              const updatedBoxes = [...prevBoxes];
-              const rect = updatedBoxes[boxId];
+              setBoxes((prevBoxes) => {
+                const updatedBoxes = [...prevBoxes];
+                const rect = updatedBoxes[boxId];
 
-              const normalizedX1 = Math.min(rect.cords.x1, rect.cords.x2);
-              const normalizedX2 = Math.max(rect.cords.x1, rect.cords.x2);
-              const normalizedY1 = Math.min(rect.cords.y1, rect.cords.y2);
-              const normalizedY2 = Math.max(rect.cords.y1, rect.cords.y2);
+                const normalizedX1 = Math.min(rect.cords.x1, rect.cords.x2);
+                const normalizedX2 = Math.max(rect.cords.x1, rect.cords.x2);
+                const normalizedY1 = Math.min(rect.cords.y1, rect.cords.y2);
+                const normalizedY2 = Math.max(rect.cords.y1, rect.cords.y2);
 
-              rect.cords.x1 = normalizedX1;
-              rect.cords.x2 = normalizedX2;
-              rect.cords.y1 = normalizedY1;
-              rect.cords.y2 = normalizedY2;
+                rect.cords.x1 = normalizedX1;
+                rect.cords.x2 = normalizedX2;
+                rect.cords.y1 = normalizedY1;
+                rect.cords.y2 = normalizedY2;
 
-              return updatedBoxes;
-            });
-            setMovingBox(false);
-          };
+                return updatedBoxes;
+              });
+              setMovingBox(false);
+            };
 
-          window.addEventListener("mousemove", onMouseMove);
-          window.addEventListener("mouseup", onMouseUp);
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
 
-          return;
+            return;
+          }
         }
       }
     }
 
+    // Handle new box creation
     let isCreatingBox = false;
+    let startPoint = { x: clickX, y: clickY };
 
     const onMouseMove = (e: MouseEvent) => {
+      if (hoveringBox) return;
+
       const moveX = e.clientX - bounding.left;
       const moveY = e.clientY - bounding.top;
 
-      if (hoveringBox) return;
+      // Snap end point to image boundaries
+      const endPoint = {
+        x: Math.max(imageCoordinates.x1, Math.min(moveX, imageCoordinates.x2)),
+        y: Math.max(imageCoordinates.y1, Math.min(moveY, imageCoordinates.y2)),
+      };
 
       if (!isCreatingBox) {
-        const dx = moveX - clickX;
-        const dy = moveY - clickY;
-        const threshold = 1;
-        if (dx * dx + dy * dy < threshold * threshold) return;
+        const dx = endPoint.x - startPoint.x;
+        const dy = endPoint.y - startPoint.y;
+        const threshold = 5;
+        if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+
         isCreatingBox = true;
         setCreatingBox(true);
 
+        const imageName = images.find(
+          (image) => image.url === selectedImage
+        )?.name;
+        if (!imageName) return;
+
         const newRect: Box = {
-          imageId: selectedImage ? crc32.str(selectedImage) : 0,
+          imageId: selectedImage ? crc32.str(imageName) : 0,
           labelId: null,
           cords: {
-            x1: clickX,
-            y1: clickY,
-            x2: moveX,
-            y2: moveY,
+            x1: startPoint.x,
+            y1: startPoint.y,
+            x2: endPoint.x,
+            y2: endPoint.y,
           },
           hover: false,
           selected: false,
@@ -222,25 +253,12 @@ export default function Page() {
         setBoxes((prevBoxes) => [...prevBoxes, newRect]);
       }
 
+      // Update box dimensions
       setBoxes((prevBoxes) => {
         const updatedBoxes = [...prevBoxes];
         const rect = updatedBoxes[updatedBoxes.length - 1];
-
-        rect.cords.x2 = Math.min(
-          Math.max(moveX, imageCoordinates.x1),
-          backgroundCanvas.width
-        );
-        rect.cords.y2 = Math.min(
-          Math.max(moveY, imageCoordinates.y1),
-          backgroundCanvas.height
-        );
-
-        const imageX2 = Math.min(rect.cords.x2, imageCoordinates.x2);
-        const imageY2 = Math.min(rect.cords.y2, imageCoordinates.y2);
-
-        rect.cords.x2 = imageX2;
-        rect.cords.y2 = imageY2;
-
+        rect.cords.x2 = endPoint.x;
+        rect.cords.y2 = endPoint.y;
         return updatedBoxes;
       });
     };
@@ -248,6 +266,7 @@ export default function Page() {
     const onMouseUp = () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      document.body.style.userSelect = "auto";
 
       if (isCreatingBox) {
         setBoxes((prevBoxes) => {
@@ -320,12 +339,17 @@ export default function Page() {
 
   return (
     <main className="flex flex-row h-full w-full relative">
-      <ImageList images={images} setSelectedImage={setSelectedImage} />
+      <ImageList
+        images={images}
+        setSelectedImage={setSelectedImage}
+        setImages={setImages}
+      />
       <Canvas
         selectedImage={selectedImage}
         boxes={boxes}
         currentBoxes={currentBoxes}
         setImageCoordinates={setImageCoordinates}
+        imageCoordinates={imageCoordinates} // Add this prop
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         overlayCanvasRef={overlayCanvasRef}
@@ -338,6 +362,7 @@ export default function Page() {
         setBoxes={setBoxes}
         labels={labels}
         setEditLabels={setEditLabels}
+        imageCoordinates={imageCoordinates} // Add this prop
       />
       <LabelEditor
         editLabels={editLabels}

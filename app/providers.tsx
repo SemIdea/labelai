@@ -50,15 +50,16 @@ export type Label = {
   color: string;
 };
 
-interface Images {
+interface Image {
   id: number;
   url: string;
+  name: string;
 }
 
 interface FileContextType {
-  images: Images[];
+  images: Image[];
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setImages: React.Dispatch<React.SetStateAction<Images[]>>;
+  setImages: React.Dispatch<React.SetStateAction<Image[]>>;
   boxes: Box[];
   setBoxes: React.Dispatch<React.SetStateAction<Box[]>>;
   labels: Label[];
@@ -92,19 +93,21 @@ export const FileProvider = ({ children }: { children: React.ReactNode }) => {
       color: "ffffff",
     },
   ]);
-  const [images, setImages] = React.useState<Images[]>([
-    {
-      url: "https://images.unsplash.com/photo-1546593064-053d21199be1?q=80&w=1975&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      id: crc32.str(
-        "https://images.unsplash.com/photo-1546593064-053d21199be1?q=80&w=1975&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-      ),
-    },
-    {
-      url: "https://images.unsplash.com/photo-1547567696-3fb538726ffd?q=80&w=1990&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      id: crc32.str(
-        "https://images.unsplash.com/photo-1547567696-3fb538726ffd?q=80&w=1990&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-      ),
-    },
+  const [images, setImages] = React.useState<Image[]>([
+    // {
+    //   url: "https://images.unsplash.com/photo-1546593064-053d21199be1?q=80&w=1975&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    //   id: crc32.str(
+    //     "https://images.unsplash.com/photo-1546593064-053d21199be1?q=80&w=1975&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    //   ),
+    //   name: "Image1",
+    // },
+    // {
+    //   url: "https://images.unsplash.com/photo-1547567696-3fb538726ffd?q=80&w=1990&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    //   id: crc32.str(
+    //     "https://images.unsplash.com/photo-1547567696-3fb538726ffd?q=80&w=1990&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    //   ),
+    //   name: "Image2",
+    // },
   ]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,6 +115,7 @@ export const FileProvider = ({ children }: { children: React.ReactNode }) => {
     const newImages = files.map((file) => ({
       url: URL.createObjectURL(file),
       id: crc32.str(file.name),
+      name: file.name,
     }));
     setImages((prevImages) => [...prevImages, ...newImages]);
     const newBoxes = files.map((file) => ({
