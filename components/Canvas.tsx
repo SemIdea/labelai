@@ -302,7 +302,7 @@ export default function Canvas({
         return prevBoxes.map((box) => ({ ...box, isHovered: false }));
       });
       return;
-    }
+    } 
 
     setCurrentBoxes((prevBoxes) => {
       return prevBoxes.map((box) => {
