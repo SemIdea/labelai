@@ -8,34 +8,28 @@ import {
   DropdownItem,
   Button,
   Divider,
+  useDisclosure,
 } from "@nextui-org/react";
-import { Box, Label, useFileContext } from "@/app/providers";
+import { useFileContext } from "@/app/providers";
 import JSZip from "jszip";
+import { useMemo } from "react";
+import { BoxI, LabelI } from "@/app/providers/types";
+import LabelEditor from "./LabelEditor";
 
-export default function BoxList({
-  currentBoxes,
-  boxes,
-  setBoxes,
-  labels,
-  setEditLabels,
-  imageCoordinates,
-}: {
-  currentBoxes: Box[] | null;
-  boxes: Box[];
-  setBoxes: React.Dispatch<React.SetStateAction<Box[]>>;
-  labels: Label[];
-  setEditLabels: () => void;
-  imageCoordinates: {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-  } | null; // Allow null
-}) {
-  const { images } = useFileContext();
+export default function BoxList() {
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const {
+    images,
+    currentBoxes,
+    labels,
+    setCurrentBoxes,
+    setLabels,
+    setCurrentLabel,
+  } = useFileContext();
 
-  const handleLabelChange = (boxIndex: number, label: Label) => {
-    setBoxes((prevBoxes) => {
+  const handleLabelChange = (boxIndex: number, label: LabelI) => {
+    setCurrentLabel(label);
+    setCurrentBoxes((prevBoxes) => {
       return prevBoxes.map((box) => {
         // Find the matching box by comparing all properties
         if (
@@ -55,7 +49,7 @@ export default function BoxList({
   };
 
   const handleVisibilityToggle = (boxIndex: number) => {
-    setBoxes((prevBoxes) => {
+    setCurrentBoxes((prevBoxes) => {
       return prevBoxes.map((box) => {
         if (
           currentBoxes &&
@@ -66,7 +60,7 @@ export default function BoxList({
           box.cords.x2 === currentBoxes[boxIndex].cords.x2 &&
           box.cords.y2 === currentBoxes[boxIndex].cords.y2
         ) {
-          return { ...box, visible: !box.visible };
+          return { ...box, isVisible: !box.isVisible };
         }
         return box;
       });
@@ -76,7 +70,7 @@ export default function BoxList({
   const handleDelete = (boxIndex: number) => {
     if (!currentBoxes) return;
     const boxToDelete = currentBoxes[boxIndex];
-    setBoxes((prevBoxes) =>
+    setCurrentBoxes((prevBoxes) =>
       prevBoxes.filter(
         (box) =>
           box.imageId !== boxToDelete.imageId ||
@@ -88,79 +82,17 @@ export default function BoxList({
     );
   };
 
-  const exportLabels = () => {
-    if (!currentBoxes || !imageCoordinates) return;
-
-    const zip = new JSZip();
-    const boxesByImage: { [key: string]: Box[] } = {};
-
-    boxes.forEach((box) => {
-      console.log(box.imageId);
-
-      const imageName = images.find((image) => image.id === box.imageId)?.name || "unknown";
-      if (!boxesByImage[imageName]) {
-        boxesByImage[imageName] = [];
-      }
-      boxesByImage[imageName].push(box);
-    });
-
-    Object.keys(boxesByImage).forEach((imageName) => {
-      const relativeBoxes = boxesByImage[imageName].map((box) => {
-        const relativeX1 =
-          (box.cords.x1 - imageCoordinates.x1) / (imageCoordinates.x2 - imageCoordinates.x1);
-        const relativeY1 =
-          (box.cords.y1 - imageCoordinates.y1) / (imageCoordinates.y2 - imageCoordinates.y1);
-        const relativeX2 =
-          (box.cords.x2 - imageCoordinates.x1) / (imageCoordinates.x2 - imageCoordinates.x1);
-        const relativeY2 =
-          (box.cords.y2 - imageCoordinates.y1) / (imageCoordinates.y2 - imageCoordinates.y1);
-
-        return {
-          ...box,
-          cords: {
-            x1: relativeX1,
-            y1: relativeY1,
-            x2: relativeX2,
-            y2: relativeY2,
-          },
-        };
-      });
-
-      const yoloFormat = relativeBoxes
-        .map((box) => {
-          const label = labels.find((label) => label.id === box.labelId);
-          if (!label) return null;
-
-          const xCenter = (box.cords.x1 + box.cords.x2) / 2;
-          const yCenter = (box.cords.y1 + box.cords.y2) / 2;
-          const width = box.cords.x2 - box.cords.x1;
-          const height = box.cords.y2 - box.cords.y1;
-
-          return `${label.id - 1} ${xCenter} ${yCenter} ${width} ${height}`;
-        })
-        .filter(Boolean)
-        .join("\n");
-
-      zip.file(`${imageName}.txt`, yoloFormat);
-    });
-
-    const labelsContent = labels.map((label) => `${label.name}`).join("\n");
-    zip.file("labels.txt", labelsContent);
-
-    zip.generateAsync({ type: "blob" }).then((content: Blob) => {
-      const url = URL.createObjectURL(content);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "labels.zip";
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-  };
-
   return (
-    <section className="w-1/6 flex flex-col items-center bg-zinc-900">
-      <div className="w-full h-1/2 p-3 flex flex-col gap-3">
+    <section className="w-1/6 flex flex-col items-center bg-zinc-900 justify-between">
+      <LabelEditor
+        labels={labels}
+        editLabels={isOpen}
+        setLabels={setLabels}
+        toggleEditLabels={onOpenChange}
+      />
+      <div className="w-full p-3 flex flex-col">
         <h2>Boxes</h2>
+        {/* <p className="break-words">{JSON.stringify(currentBoxes)}</p> */}
         <ul className="flex flex-col gap-3">
           {currentBoxes &&
             currentBoxes.map((box, index) => (
@@ -200,7 +132,7 @@ export default function BoxList({
                     className="text-lg cursor-pointer active:opacity-50"
                     onClick={() => handleVisibilityToggle(index)}
                   >
-                    {box.visible ? <FaEye /> : <FaEyeSlash />}
+                    {box.isVisible ? <FaEye /> : <FaEyeSlash />}
                   </span>
                   <span
                     className="text-lg text-danger cursor-pointer active:opacity-50"
@@ -213,12 +145,11 @@ export default function BoxList({
             ))}
         </ul>
       </div>
-      <Divider />
-      <div className="w-full h-1/2 p-4">
-        <Button onClick={setEditLabels}>Edit Labels</Button>
-        <Button onClick={exportLabels} className="mt-2">
-          Export Labels
+      <div className="w-full p-4 flex justify-between gap-3">
+        <Button className="w-full" onClick={onOpen}>
+          Edit Labels
         </Button>
+        <Button className="w-full">Export Labels</Button>
       </div>
     </section>
   );

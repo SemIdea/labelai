@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Label } from "@/app/providers";
+import { useFileContext } from "@/app/providers";
+import { BoxI, LabelI } from "@/app/providers/types";
 import {
   Modal,
   ModalContent,
@@ -10,25 +11,23 @@ import {
   Input,
   Button,
 } from "@nextui-org/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { HexColorPicker } from "react-colorful";
 
 export default function LabelEditor({
   editLabels,
-  toggleEditLabels,
   labels,
   setLabels,
-  boxes,
-  setBoxes,
+  toggleEditLabels,
 }: {
   editLabels: boolean;
+  labels: LabelI[];
+  setLabels: React.Dispatch<React.SetStateAction<LabelI[]>>;
   toggleEditLabels: () => void;
-  labels: Label[];
-  setLabels: React.Dispatch<React.SetStateAction<Label[]>>;
-  boxes: Box[];
-  setBoxes: React.Dispatch<React.SetStateAction<Box[]>>;
 }) {
+  const { setCurrentLabel } = useFileContext();
   const [colorPickerIndex, setColorPickerIndex] = useState<number | null>(null);
+  const memoizedLabels = useMemo(() => labels, [labels]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,82 +51,82 @@ export default function LabelEditor({
       onOpenChange={toggleEditLabels}
     >
       <ModalContent>
-      {(onClose) => (
-        <>
-        <ModalHeader>Edit Labels</ModalHeader>
-        <ModalBody>
-          {!labels.length ? (
-          <p>No labels available</p>
-          ) : (
-          <ul className="flex flex-col gap-3">
-            {labels.map((label, index) => (
-            <li
-              key={index}
-              className="flex justify-between gap-3 items-center relative"
-            >
-              <div
-              className="size-5 rounded-full cursor-pointer"
-              style={{ backgroundColor: `#${label.color}` }}
-              onClick={() => setColorPickerIndex(index)}
-              ></div>
-              {colorPickerIndex === index && (
-              <div
-                className="absolute z-10 color-picker"
-                style={{ top: "100%", left: 0 }}
-              >
-                <HexColorPicker
-                color={`#${label.color}`}
-                onChange={(color) => {
-                  const updatedLabels = [...labels];
-                  updatedLabels[index].color = color.slice(1);
-                  setLabels(updatedLabels);
-                }}
-                />
-              </div>
+        {(onClose) => (
+          <>
+            <ModalHeader>Edit Labels</ModalHeader>
+            <ModalBody>
+              {!labels.length ? (
+                <p>No labels available</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {memoizedLabels.map((label, index) => (
+                    <li
+                      key={index}
+                      className="flex justify-between gap-3 items-center relative"
+                    >
+                      <div
+                        className="size-5 rounded-full cursor-pointer"
+                        style={{ backgroundColor: `#${label.color}` }}
+                        onClick={() => setColorPickerIndex(index)}
+                      ></div>
+                      {colorPickerIndex === index && (
+                        <div
+                          className="absolute z-10 color-picker"
+                          style={{ top: "100%", left: 0 }}
+                        >
+                          <HexColorPicker
+                            color={`#${label.color}`}
+                            onChange={(color) => {
+                              const updatedLabels = [...labels];
+                              updatedLabels[index].color = color.slice(1);
+                              setLabels(updatedLabels);
+                            }}
+                          />
+                        </div>
+                      )}
+                      <Input
+                        value={label.name}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setLabels((prevLabels) => {
+                            const updatedLabels = [...prevLabels];
+                            updatedLabels[index].name = value;
+                            return updatedLabels;
+                          });
+                        }}
+                      />
+                      <Button
+                        onClick={() => {
+                          setLabels((prevLabels) =>
+                            prevLabels.filter((_, i) => i !== index)
+                          );
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               )}
-              <Input
-              value={label.name}
-              onChange={(e) => {
-                const value = e.target.value;
-                setLabels((prevLabels) => {
-                const updatedLabels = [...prevLabels];
-                updatedLabels[index].name = value;
-                return updatedLabels;
-                });
-              }}
-              />
+            </ModalBody>
+            <ModalFooter>
               <Button
-              onClick={() => {
-                setLabels((prevLabels) =>
-                prevLabels.filter((_, i) => i !== index)
-                );
-              }}
+                onClick={() =>
+                  setLabels((prevLabels) => [
+                    ...prevLabels,
+                    {
+                      id: prevLabels.length,
+                      name: "New Label",
+                      color: "ffffff",
+                    },
+                  ])
+                }
               >
-              Delete
+                Add Label
               </Button>
-            </li>
-            ))}
-          </ul>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <Button
-          onClick={() =>
-            setLabels((prevLabels) => [
-            ...prevLabels,
-            {
-              id: prevLabels.length,
-              name: "New Label",
-              color: "ffffff",
-            },
-            ])
-          }
-          >
-          Add Label
-          </Button>
-        </ModalFooter>
-        </>
-      )}
+            </ModalFooter>
+          </>
+        )}
       </ModalContent>
     </Modal>
   );
