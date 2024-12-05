@@ -7,19 +7,18 @@ import {
   DropdownMenu,
   DropdownItem,
   Button,
-  Divider,
   useDisclosure,
 } from "@nextui-org/react";
 import { useFileContext } from "@/app/providers";
 import JSZip from "jszip";
-import { useMemo } from "react";
-import { BoxI, LabelI } from "@/app/providers/types";
+import { LabelI } from "@/app/providers/types";
 import LabelEditor from "./LabelEditor";
 
 export default function BoxList() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const {
     images,
+    setImages,
     currentBoxes,
     labels,
     setCurrentBoxes,
@@ -28,9 +27,10 @@ export default function BoxList() {
   } = useFileContext();
 
   const handleLabelChange = (boxIndex: number, label: LabelI) => {
+    console.log("handleLabelChange", boxIndex, label);
     setCurrentLabel(label);
     setCurrentBoxes((prevBoxes) => {
-      return prevBoxes.map((box) => {
+      const newBoxes = prevBoxes.map((box) => {
         // Find the matching box by comparing all properties
         if (
           currentBoxes &&
@@ -41,10 +41,19 @@ export default function BoxList() {
           box.cords.x2 === currentBoxes[boxIndex].cords.x2 &&
           box.cords.y2 === currentBoxes[boxIndex].cords.y2
         ) {
-          return { ...box, labelId: label.id };
+          return { ...box, labelId: labels.indexOf(label) };
         }
         return box;
       });
+
+      const updatedImages = [...images];
+      const imageIndex = images.findIndex(
+        (image) => image.id === currentBoxes[boxIndex].imageId
+      );
+      if (imageIndex === -1) return prevBoxes;
+      updatedImages[imageIndex].boxes = newBoxes;
+      setImages(updatedImages);
+      return newBoxes;
     });
   };
 
@@ -70,16 +79,59 @@ export default function BoxList() {
   const handleDelete = (boxIndex: number) => {
     if (!currentBoxes) return;
     const boxToDelete = currentBoxes[boxIndex];
-    setCurrentBoxes((prevBoxes) =>
-      prevBoxes.filter(
-        (box) =>
-          box.imageId !== boxToDelete.imageId ||
-          box.cords.x1 !== boxToDelete.cords.x1 ||
-          box.cords.y1 !== boxToDelete.cords.y1 ||
-          box.cords.x2 !== boxToDelete.cords.x2 ||
-          box.cords.y2 !== boxToDelete.cords.y2
-      )
+    const updatedBoxes = currentBoxes.filter(
+      (box) =>
+        box.imageId !== boxToDelete.imageId ||
+        box.cords.x1 !== boxToDelete.cords.x1 ||
+        box.cords.y1 !== boxToDelete.cords.y1 ||
+        box.cords.x2 !== boxToDelete.cords.x2 ||
+        box.cords.y2 !== boxToDelete.cords.y2
     );
+    setCurrentBoxes(updatedBoxes);
+    const updatedImages = [...images];
+    const imageIndex = images.findIndex(
+      (image) => image.id === boxToDelete.imageId
+    );
+    if (imageIndex === -1) return;
+    updatedImages[imageIndex].boxes = updatedBoxes;
+    setImages(updatedImages);
+  };
+
+  const exportLabels = () => {
+    const zip = new JSZip();
+
+    zip.file(
+      "labels.txt",
+      labels.map((label, index) => `${index} ${label.name}`).join("\n")
+    );
+
+    images.forEach((image) => {
+      let text = "";
+      image.boxes.forEach((box) => {
+        if (box.labelId === null) return;
+        const label = labels[box.labelId];
+
+        // Normalize coordinates for YOLO format
+        const xCenter = (box.cords.x1 + box.cords.x2) / 2 / image.width;
+        const yCenter = (box.cords.y1 + box.cords.y2) / 2 / image.height;
+        const width = (box.cords.x2 - box.cords.x1) / image.width;
+        const height = (box.cords.y2 - box.cords.y1) / image.height;
+
+        text += `${labels.indexOf(
+          label
+        )} ${xCenter} ${yCenter} ${width} ${height}\n`;
+      });
+      if (text === "") return;
+      zip.file(`${image.name.split(".")[0]}.txt`, text);
+    });
+
+    zip.generateAsync({ type: "blob" }).then((content) => {
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "labels.zip";
+      a.click();
+    });
   };
 
   return (
@@ -90,9 +142,9 @@ export default function BoxList() {
         setLabels={setLabels}
         toggleEditLabels={onOpenChange}
       />
-      <div className="w-full p-3 flex flex-col">
+      <div className="w-full p-3 flex flex-col text-center">
         <h2>Boxes</h2>
-        {/* <p className="break-words">{JSON.stringify(currentBoxes)}</p> */}
+        {/* <p className="break-words">{JSON.stringify(labels)}</p> */}
         <ul className="flex flex-col gap-3">
           {currentBoxes &&
             currentBoxes.map((box, index) => (
@@ -105,7 +157,7 @@ export default function BoxList() {
                   style={{
                     backgroundColor:
                       box.labelId !== null
-                        ? `#${labels[box.labelId - 1].color}`
+                        ? `#${labels[box.labelId].color}`
                         : "#ffffff",
                   }}
                 ></div>
@@ -113,13 +165,13 @@ export default function BoxList() {
                 <Dropdown>
                   <DropdownTrigger className="cursor-pointer">
                     {box.labelId !== null
-                      ? String(labels[box.labelId - 1].name)
+                      ? String(labels[box.labelId].name)
                       : `Select Label`}
                   </DropdownTrigger>
                   <DropdownMenu>
                     {labels.map((label) => (
                       <DropdownItem
-                        key={label.id}
+                        key={labels.indexOf(label)}
                         onClick={() => handleLabelChange(index, label)}
                       >
                         {label.name}
@@ -149,7 +201,9 @@ export default function BoxList() {
         <Button className="w-full" onClick={onOpen}>
           Edit Labels
         </Button>
-        <Button className="w-full">Export Labels</Button>
+        <Button className="w-full" onClick={exportLabels}>
+          Export Labels
+        </Button>
       </div>
     </section>
   );

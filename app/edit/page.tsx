@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useFileContext } from "@/app/providers";
-import { useDisclosure } from "@nextui-org/react";
 import ImageList from "@/components/ImageList";
-import LabelEditor from "@/components/LabelEditor";
 import BoxList from "@/components/BoxList";
 import Canvas from "@/components/Canvas";
 

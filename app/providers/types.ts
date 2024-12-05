@@ -8,7 +8,6 @@ interface BoxI {
 }
 
 interface LabelI {
-  id: number;
   name: string;
   color: string;
 }
@@ -17,6 +16,9 @@ interface ImageI {
   id: number;
   url: string;
   name: string;
+  cords: ImageCordinatesI | null;
+  width: number;
+  height: number;
   boxes: BoxI[];
 }
 

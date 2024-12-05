@@ -119,6 +119,16 @@ export default function Canvas({
       y2: offsetY + drawHeight,
     };
 
+    const updatedImages = [...images];
+    const imageIndex = updatedImages.findIndex(
+      (image) => image.url === selectedImage
+    );
+    if (imageIndex === -1) return;
+    updatedImages[imageIndex].cords = imageCoordinates.current;
+    updatedImages[imageIndex].width = image.width;
+    updatedImages[imageIndex].height = image.height;
+    setImages(updatedImages);
+
     ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
   };
 
@@ -250,12 +260,11 @@ export default function Canvas({
           y2: y,
         },
         imageId: crc32.str(imageName.current || ""),
-        labelId: currentLabel ? currentLabel.id : null,
+        labelId: null,
         isHovered: true,
         isSelected: false,
         isVisible: true,
       };
-
       setCurrentBoxes((prevBoxes) => [...prevBoxes, newBox]);
     }
 
@@ -266,6 +275,7 @@ export default function Canvas({
         rect.cords.x2 = Math.min(Math.max(x, coordinates.x1), coordinates.x2);
         rect.cords.y2 = Math.min(Math.max(y, coordinates.y1), coordinates.y2);
         rect.isHovered = true;
+        rect.labelId = currentLabel ? labels.indexOf(currentLabel) : null;
         return updatedBoxes;
       });
     }
@@ -302,7 +312,7 @@ export default function Canvas({
         return prevBoxes.map((box) => ({ ...box, isHovered: false }));
       });
       return;
-    } 
+    }
 
     setCurrentBoxes((prevBoxes) => {
       return prevBoxes.map((box) => {
@@ -371,7 +381,7 @@ export default function Canvas({
     };
 
     const color =
-      box.labelId !== null ? `#${labels[box.labelId - 1].color}` : "#ffffff";
+      box.labelId !== null ? `#${labels[box.labelId].color}` : "#ffffff";
 
     return { boundedBox, color };
   }

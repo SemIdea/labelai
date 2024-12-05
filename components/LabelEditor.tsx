@@ -1,7 +1,7 @@
 "use client";
 
 import { useFileContext } from "@/app/providers";
-import { BoxI, LabelI } from "@/app/providers/types";
+import { ImageI, LabelI } from "@/app/providers/types";
 import {
   Modal,
   ModalContent,
@@ -14,6 +14,18 @@ import {
 import { useEffect, useState, useMemo } from "react";
 import { HexColorPicker } from "react-colorful";
 
+function generateDistinctColor(existingColors: string[]): string {
+  const getRandomColor = () =>
+    Math.floor(Math.random() * 16777215)
+      .toString(16)
+      .padStart(6, "0");
+  let newColor = getRandomColor();
+  while (existingColors.includes(newColor)) {
+    newColor = getRandomColor();
+  }
+  return newColor;
+}
+
 export default function LabelEditor({
   editLabels,
   labels,
@@ -25,7 +37,14 @@ export default function LabelEditor({
   setLabels: React.Dispatch<React.SetStateAction<LabelI[]>>;
   toggleEditLabels: () => void;
 }) {
-  const { setCurrentLabel } = useFileContext();
+  const {
+    currentBoxes,
+    currentLabel,
+    images,
+    setCurrentLabel,
+    setCurrentBoxes,
+    setImages,
+  } = useFileContext();
   const [colorPickerIndex, setColorPickerIndex] = useState<number | null>(null);
   const memoizedLabels = useMemo(() => labels, [labels]);
 
@@ -97,6 +116,26 @@ export default function LabelEditor({
                       />
                       <Button
                         onClick={() => {
+                          var image: ImageI | null = null;
+                          const updatedBoxes = currentBoxes.map((box) => {
+                            if (box.labelId === labels.indexOf(label)) {
+                              const currentImage = images.find(
+                                (image) => image.id === box.imageId
+                              );
+                              if (currentImage) image = currentImage;
+                              return { ...box, labelId: null };
+                            }
+
+                            return box;
+                          });
+                          if (image) {
+                            const updatedImages = [...images];
+                            updatedImages[images.indexOf(image)].boxes =
+                              updatedBoxes;
+                            setImages(updatedImages);
+                          }
+                          setCurrentBoxes(updatedBoxes);
+                          if (currentLabel === label) setCurrentLabel(null);
                           setLabels((prevLabels) =>
                             prevLabels.filter((_, i) => i !== index)
                           );
@@ -112,14 +151,19 @@ export default function LabelEditor({
             <ModalFooter>
               <Button
                 onClick={() =>
-                  setLabels((prevLabels) => [
-                    ...prevLabels,
-                    {
-                      id: prevLabels.length,
-                      name: "New Label",
-                      color: "ffffff",
-                    },
-                  ])
+                  setLabels((prevLabels) => {
+                    const existingColors = prevLabels.map(
+                      (label) => label.color
+                    );
+                    const newColor = generateDistinctColor(existingColors);
+                    return [
+                      ...prevLabels,
+                      {
+                        name: "New Label",
+                        color: newColor,
+                      },
+                    ];
+                  })
                 }
               >
                 Add Label

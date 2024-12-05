@@ -46,7 +46,7 @@ function ImageItem({
 
   return (
     <li
-      className="w-32 h-32 relative"
+      className="w-32 h-32 relative flex justify-center items-center cursor-pointer border-1 border-gray-400 rounded-lg"
       onClick={() => {
         setSelectedImage(image.url);
       }}
@@ -93,6 +93,9 @@ export default function ImageList({
             url,
             name,
             boxes: [],
+            cords: null,
+            width: 0,
+            height: 0,
           });
           if (newImages.length === files.length) {
             setImages([...images, ...newImages]);
@@ -136,6 +139,9 @@ export default function ImageList({
               url,
               name,
               boxes: [],
+              cords: null,
+              width: 0,
+              height: 0,
             });
             if (newImages.length === files.length) {
               setImages([...images, ...newImages]);
@@ -154,7 +160,7 @@ export default function ImageList({
 
   return (
     <section
-      className="w-1/6 min-h-screen max-h-screen bg-zinc-500 flex flex-col items-center gap-3 p-3"
+      className="w-1/6 min-h-screen max-h-screen bg-zinc-900 flex flex-col items-center gap-3 p-3"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
@@ -182,15 +188,19 @@ export default function ImageList({
         <Button onClick={handleSortImages}>Sort Images</Button>
       </div>
 
-      <ul className="flex flex-wrap gap-5 justify-center overflow-auto">
-        {images.map((image, index) => (
-          <ImageItem
-            key={index}
-            image={image}
-            setSelectedImage={setSelectedImage}
-          />
-        ))}
-      </ul>
+      <div
+        className="flex justify-center"
+      >
+        <ul className="grid grid-cols-2 gap-5 overflow-auto">
+          {images.map((image, index) => (
+            <ImageItem
+              key={index}
+              image={image}
+              setSelectedImage={setSelectedImage}
+            />
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
