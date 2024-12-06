@@ -1,3 +1,5 @@
+import { ThemeProviderProps } from "next-themes/dist/types";
+
 interface BoxI {
   imageId: number;
   labelId: number | null;
@@ -46,4 +48,17 @@ interface Point {
   y: number;
 }
 
-export type { BoxI, LabelI, ImageI, FileContextI, ImageCordinatesI, Point };
+interface ProvidersProps {
+  children: React.ReactNode;
+  themeProps?: ThemeProviderProps;
+}
+
+export type {
+  BoxI,
+  LabelI,
+  ImageI,
+  FileContextI,
+  ImageCordinatesI,
+  Point,
+  ProvidersProps,
+};

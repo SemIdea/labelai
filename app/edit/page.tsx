@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
-import { useFileContext } from "@/app/providers";
-import ImageList from "@/components/ImageList";
-import BoxList from "@/components/BoxList";
-import Canvas from "@/components/Canvas";
+import { useEffect, useState } from "react";
+import ImageList from "@/components/imageList";
+import BoxList from "@/components/boxList";
+import Canvas from "@/components/canvas";
 
 export default function Page() {
-  const { images, labels, setImages, setLabels } = useFileContext();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,13 +23,6 @@ export default function Page() {
       <ImageList setSelectedImage={setSelectedImage} />
       <Canvas
         selectedImage={selectedImage}
-        // boxes={{}}
-        // currentBoxes={[]}
-        // setImageCoordinates={setImageCoordinates}
-        // imageCoordinates={imageCoordinates}
-        // overlayCanvasRef={overlayCanvasRef}
-        // backgroundCanvasRef={backgroundCanvasRef}
-        // labels={labels}
       />
       <BoxList />
     </main>

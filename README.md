@@ -1,53 +1,30 @@
-# Next.js & NextUI Template
+LabelAi is an object detection labeling tool for Yolo. It's an web aplication that don't use any server, so you can use it offline. It's very simple to use, you just need to upload your images and start labeling them. You can also download the labels in Yolo format. 
 
-This is a template for creating applications using Next.js 14 (app directory) and NextUI (v2).
+## Features
+- Label images with bounding boxes
+- Download labels in Yolo format
+- Upload and download images
+- Use offline
 
-[Try it on CodeSandbox](https://githubbox.com/nextui-org/next-app-template)
+## How to use
+1. Upload your images
+2. Start labeling
+3. Download the labels
 
-## Technologies Used
+## How to install
+1. Clone the repository
+1. Clone the repository
+2. Navigate to the project directory
+3. Run `yarn install` to install dependencies
+3. Run `yarn build` to build the project
+4. Run `yarn start` to start the server
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [NextUI v2](https://nextui.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
-
-## How to Use
-
-### Use the template with create-next-app
-
-To create a new project based on this template using `create-next-app`, run the following command:
-
-```bash
-npx create-next-app -e https://github.com/nextui-org/next-app-template
-```
-
-### Install dependencies
-
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
-
-```bash
-npm install
-```
-
-### Run the development server
-
-```bash
-npm run dev
-```
-
-### Setup pnpm (optional)
-
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
-
-```bash
-public-hoist-pattern[]=*@nextui-org/*
-```
-
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+## How to contribute
+1. Fork the repository
+2. Create a branch
+3. Make your changes
+4. Create a pull request
 
 ## License
-
-Licensed under the [MIT license](https://github.com/nextui-org/next-app-template/blob/main/LICENSE).
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+```

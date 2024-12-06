@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import crc32 from "crc-32";
-import { BoxI, ImageCordinatesI, ImageI, Point } from "@/app/providers/types";
+import { useEffect, useRef } from "react";
+import { BoxI, ImageCordinatesI, Point } from "@/app/providers/types";
 import { useFileContext } from "@/app/providers";
 
 export default function Canvas({
@@ -147,7 +147,6 @@ export default function Canvas({
     )
       return;
 
-    // Handle box resizing
     for (const box of currentBoxes) {
       const { boundedBox } = getBoxDrawingInfo(box);
       const controlPoints = getControlPoints(boundedBox);
@@ -226,7 +225,7 @@ export default function Canvas({
       }
     }
 
-    if (currentBoxes.some((box) => box.isHovered)) return; // Prevent creating a new box if any box is being hovered
+    if (currentBoxes.some((box) => box.isHovered)) return;
 
     mouseStartPosition.current = getMousePosition(e);
     overlayCanvas.addEventListener("mousemove", handleMouseMove);

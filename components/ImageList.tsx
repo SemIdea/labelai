@@ -1,16 +1,16 @@
 "use client";
 
 import Image from "next/image";
+import crc32 from "crc-32";
 import { Button } from "@nextui-org/react";
 import { useState, useCallback, useEffect } from "react";
-import crc32 from "crc-32";
 import { ImageI } from "@/app/providers/types";
 import { useInView } from "react-intersection-observer";
 import { useFileContext } from "@/app/providers";
 
 function resizeImage(url: string, callback: (resizedUrl: string) => void) {
   const img = new window.Image();
-  img.crossOrigin = "anonymous"; // Ensure the image is loaded with CORS enabled
+  img.crossOrigin = "anonymous";
   img.src = url;
   img.onload = () => {
     const canvas = document.createElement("canvas");
@@ -19,7 +19,7 @@ function resizeImage(url: string, callback: (resizedUrl: string) => void) {
       canvas.width = 100;
       canvas.height = 100;
       ctx.drawImage(img, 0, 0, 100, 100);
-      callback(canvas.toDataURL("image/jpeg", 0.7)); // Adjust the quality to 0.7
+      callback(canvas.toDataURL("image/jpeg", 0.7));
     }
   };
 }
@@ -59,7 +59,7 @@ function ImageItem({
           width={100}
           height={100}
           loading="lazy"
-          sizes="100px" // Set the size to 128x128 for maximum performance
+          sizes="100px"
         />
       )}
     </li>

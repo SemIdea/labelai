@@ -1,18 +1,18 @@
 "use client";
-import crc32 from "crc-32"; // Import crc-32 library
 
+import crc32 from "crc-32";
 import * as React from "react";
 import { NextUIProvider } from "@nextui-org/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { ThemeProviderProps } from "next-themes/dist/types";
 import { createContext } from "react";
-import { BoxI, FileContextI, ImageI, LabelI } from "./providers/types";
-
-export interface ProvidersProps {
-  children: React.ReactNode;
-  themeProps?: ThemeProviderProps;
-}
+import {
+  BoxI,
+  FileContextI,
+  ImageI,
+  LabelI,
+  ProvidersProps,
+} from "./providers/types";
 
 export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();

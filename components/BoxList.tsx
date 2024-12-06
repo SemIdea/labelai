@@ -11,8 +11,8 @@ import {
 } from "@nextui-org/react";
 import { useFileContext } from "@/app/providers";
 import JSZip from "jszip";
-import { LabelI } from "@/app/providers/types";
-import LabelEditor from "./LabelEditor";
+import { BoxI, LabelI } from "@/app/providers/types";
+import LabelEditor from "./labelEditor";
 
 export default function BoxList() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -26,75 +26,51 @@ export default function BoxList() {
     setCurrentLabel,
   } = useFileContext();
 
-  const handleLabelChange = (boxIndex: number, label: LabelI) => {
-    console.log("handleLabelChange", boxIndex, label);
-    setCurrentLabel(label);
+  const updateBoxes = (boxIndex: number, updateFn: (box: BoxI) => BoxI) => {
     setCurrentBoxes((prevBoxes) => {
-      const newBoxes = prevBoxes.map((box) => {
-        // Find the matching box by comparing all properties
-        if (
-          currentBoxes &&
-          currentBoxes[boxIndex] &&
-          box.imageId === currentBoxes[boxIndex].imageId &&
-          box.cords.x1 === currentBoxes[boxIndex].cords.x1 &&
-          box.cords.y1 === currentBoxes[boxIndex].cords.y1 &&
-          box.cords.x2 === currentBoxes[boxIndex].cords.x2 &&
-          box.cords.y2 === currentBoxes[boxIndex].cords.y2
-        ) {
-          return { ...box, labelId: labels.indexOf(label) };
-        }
-        return box;
-      });
+      const newBoxes = prevBoxes.map((box, index) =>
+        index === boxIndex ? updateFn(box) : box
+      );
 
       const updatedImages = [...images];
       const imageIndex = images.findIndex(
         (image) => image.id === currentBoxes[boxIndex].imageId
       );
-      if (imageIndex === -1) return prevBoxes;
-      updatedImages[imageIndex].boxes = newBoxes;
-      setImages(updatedImages);
+      if (imageIndex !== -1) {
+        updatedImages[imageIndex].boxes = newBoxes;
+        setImages(updatedImages);
+      }
       return newBoxes;
     });
   };
 
+  const handleLabelChange = (boxIndex: number, label: LabelI) => {
+    setCurrentLabel(label);
+    updateBoxes(boxIndex, (box) => ({
+      ...box,
+      labelId: labels.indexOf(label),
+    }));
+  };
+
   const handleVisibilityToggle = (boxIndex: number) => {
-    setCurrentBoxes((prevBoxes) => {
-      return prevBoxes.map((box) => {
-        if (
-          currentBoxes &&
-          currentBoxes[boxIndex] &&
-          box.imageId === currentBoxes[boxIndex].imageId &&
-          box.cords.x1 === currentBoxes[boxIndex].cords.x1 &&
-          box.cords.y1 === currentBoxes[boxIndex].cords.y1 &&
-          box.cords.x2 === currentBoxes[boxIndex].cords.x2 &&
-          box.cords.y2 === currentBoxes[boxIndex].cords.y2
-        ) {
-          return { ...box, isVisible: !box.isVisible };
-        }
-        return box;
-      });
-    });
+    updateBoxes(boxIndex, (box) => ({
+      ...box,
+      isVisible: !box.isVisible,
+    }));
   };
 
   const handleDelete = (boxIndex: number) => {
-    if (!currentBoxes) return;
     const boxToDelete = currentBoxes[boxIndex];
-    const updatedBoxes = currentBoxes.filter(
-      (box) =>
-        box.imageId !== boxToDelete.imageId ||
-        box.cords.x1 !== boxToDelete.cords.x1 ||
-        box.cords.y1 !== boxToDelete.cords.y1 ||
-        box.cords.x2 !== boxToDelete.cords.x2 ||
-        box.cords.y2 !== boxToDelete.cords.y2
-    );
+    const updatedBoxes = currentBoxes.filter((_, index) => index !== boxIndex);
     setCurrentBoxes(updatedBoxes);
     const updatedImages = [...images];
     const imageIndex = images.findIndex(
       (image) => image.id === boxToDelete.imageId
     );
-    if (imageIndex === -1) return;
-    updatedImages[imageIndex].boxes = updatedBoxes;
-    setImages(updatedImages);
+    if (imageIndex !== -1) {
+      updatedImages[imageIndex].boxes = updatedBoxes;
+      setImages(updatedImages);
+    }
   };
 
   const exportLabels = () => {
@@ -111,7 +87,6 @@ export default function BoxList() {
         if (box.labelId === null) return;
         const label = labels[box.labelId];
 
-        // Normalize coordinates for YOLO format
         const xCenter = (box.cords.x1 + box.cords.x2) / 2 / image.width;
         const yCenter = (box.cords.y1 + box.cords.y2) / 2 / image.height;
         const width = (box.cords.x2 - box.cords.x1) / image.width;
@@ -144,7 +119,6 @@ export default function BoxList() {
       />
       <div className="w-full p-3 flex flex-col text-center">
         <h2>Boxes</h2>
-        {/* <p className="break-words">{JSON.stringify(labels)}</p> */}
         <ul className="flex flex-col gap-3">
           {currentBoxes &&
             currentBoxes.map((box, index) => (
