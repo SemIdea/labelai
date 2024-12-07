@@ -6,6 +6,7 @@ import { NextUIProvider } from "@nextui-org/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { createContext } from "react";
+import { sort } from "fast-sort";
 import {
   BoxI,
   FileContextI,
@@ -26,6 +27,32 @@ export function Providers({ children, themeProps }: ProvidersProps) {
 
 const FileContext = createContext<FileContextI | undefined>(undefined);
 
+const alphanumericSort = (a: string, b: string) => {
+  const regex = /(\d+)|(\D+)/g;
+  const aParts = a.match(regex);
+  const bParts = b.match(regex);
+
+  if (!aParts || !bParts) return a.localeCompare(b);
+
+  while (aParts.length && bParts.length) {
+    const aPart = aParts.shift();
+    const bPart = bParts.shift();
+
+    if (aPart !== bPart) {
+      const aNum = parseInt(aPart ?? "", 10);
+      const bNum = parseInt(bPart ?? "", 10);
+
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      } else {
+        return (aPart ?? "").localeCompare(bPart ?? "");
+      }
+    }
+  }
+
+  return aParts.length - bParts.length;
+};
+
 export const FileProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentBoxes, setCurrentBoxes] = React.useState<BoxI[]>([]);
   const [currentLabel, setCurrentLabel] = React.useState<LabelI | null>(null);
@@ -43,7 +70,20 @@ export const FileProvider = ({ children }: { children: React.ReactNode }) => {
       width: 0,
       height: 0,
     }));
-    setImages((prevImages) => [...prevImages, ...newImages]);
+
+    setImages((prevImages) => {
+      const existingImageNames = new Set(prevImages.map((img) => img.name));
+      const filteredNewImages = newImages.filter(
+        (img) => !existingImageNames.has(img.name)
+      );
+      const sortedImages = sort([...prevImages, ...filteredNewImages]).by([
+        {
+          asc: (image) => image.name.toLowerCase(),
+          comparer: alphanumericSort,
+        },
+      ]);
+      return sortedImages;
+    });
   };
 
   return (

@@ -1,12 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import crc32 from "crc-32";
 import { Button } from "@nextui-org/react";
 import { useState, useCallback, useEffect } from "react";
 import { ImageI } from "@/app/providers/types";
 import { useInView } from "react-intersection-observer";
 import { useFileContext } from "@/app/providers";
+import { sort } from "fast-sort";
 
 function resizeImage(url: string, callback: (resizedUrl: string) => void) {
   const img = new window.Image();
@@ -46,7 +46,7 @@ function ImageItem({
 
   return (
     <li
-      className="w-32 h-32 relative flex justify-center items-center cursor-pointer border-1 border-gray-400 rounded-lg"
+      className="w-32 h-32 relative flex flex-col justify-center items-center cursor-pointer border-1 border-gray-400 rounded-lg"
       onClick={() => {
         setSelectedImage(image.url);
       }}
@@ -62,6 +62,9 @@ function ImageItem({
           sizes="100px"
         />
       )}
+      <p className="max-w-full text-xs break-words ">
+        {image.name.length > 18 ? image.name.substring(0, 18) : image.name}
+      </p>
     </li>
   );
 }
@@ -71,51 +74,56 @@ export default function ImageList({
 }: {
   setSelectedImage: (url: string) => void;
 }) {
-  const { images, setImages } = useFileContext();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const { images, setImages, handleImageUpload } = useFileContext();
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [renderKey, setRenderKey] = useState<number>(0);
 
   const handleAddImage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      const newImages: ImageI[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (!file.type.startsWith("image/")) {
-          alert("Only images are allowed!");
-          continue;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const url = e.target?.result as string;
-          const name = file.name;
-          newImages.push({
-            id: crc32.str(name),
-            url,
-            name,
-            boxes: [],
-            cords: null,
-            width: 0,
-            height: 0,
-          });
-          if (newImages.length === files.length) {
-            setImages([...images, ...newImages]);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    }
+    handleImageUpload(event);
   };
 
   const handleSortImages = () => {
-    const sortedImages = [...images].sort((a, b) => {
-      if (sortOrder === "asc") {
-        return a.name.localeCompare(b.name);
-      } else {
-        return b.name.localeCompare(a.name);
+    const alphanumericSort = (a: string, b: string) => {
+      const regex = /(\d+)|(\D+)/g;
+      const aParts = a.match(regex);
+      const bParts = b.match(regex);
+
+      if (!aParts || !bParts) return a.localeCompare(b);
+
+      while (aParts.length && bParts.length) {
+        const aPart = aParts.shift();
+        const bPart = bParts.shift();
+
+        if (aPart !== bPart) {
+          const aNum = parseInt(aPart ?? "", 10);
+          const bNum = parseInt(bPart ?? "", 10);
+
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return aNum - bNum;
+          } else {
+            return (aPart ?? "").localeCompare(bPart ?? "");
+          }
+        }
       }
-    });
+
+      return aParts.length - bParts.length;
+    };
+
+    const sortedImages = sort(images).by([
+      sortOrder === "desc"
+        ? {
+            asc: (image) => image.name.toLowerCase(),
+            comparer: alphanumericSort,
+          }
+        : {
+            desc: (image) => image.name.toLowerCase(),
+            comparer: alphanumericSort,
+          },
+    ]);
+
     setImages(sortedImages);
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    setRenderKey(renderKey + 1);
   };
 
   const handleDrop = useCallback(
@@ -185,13 +193,11 @@ export default function ImageList({
             </>
           )) || <h2 className="font-bold">{images.length} Images loaded!</h2>}
         </label>
-        <Button onClick={handleSortImages}>Sort Images</Button>
+        <Button onClick={handleSortImages}>Sort Images: {sortOrder}</Button>
       </div>
 
-      <div
-        className="flex justify-center"
-      >
-        <ul className="grid grid-cols-2 gap-5 overflow-auto">
+      <div className="flex justify-center overflow-auto pr-3">
+        <ul key={renderKey} className="grid grid-cols-2 gap-5">
           {images.map((image, index) => (
             <ImageItem
               key={index}
