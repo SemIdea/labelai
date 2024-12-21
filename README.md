@@ -4,11 +4,13 @@
 
 LabelAi is a web-based, client-side object recognition labeling tool designed to streamline machine learning model development. This open-source platform provides developers and machine learning enthusiasts with an intuitive interface for image labeling and model training.
 
+Website: [LabelAi](https://labelai-blush.vercel.app/)
+
 ## Features
 
 - Client-side image upload
 - Comprehensive image selection
-- Flexible label creation and management
+- Flexible label creation aand management
 - Fully web-based with no server-side dependencies
 
 ## Technology Stack
@@ -24,33 +26,39 @@ Developed as a personal challenge to explore object recognition, LabelAi address
 ## Roadmap
 
 ### Current Capabilities
+
 - Upload and manage images
 - Create custom labels
 - Manual object annotation
 
 ### Planned Enhancements
+
 - Artificial Intelligence-assisted labeling
 - Custom model integration
 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (latest stable version recommended)
 - npm or Yarn package manager
 
 ### Installation
 
 1. Clone the repository
+
    ```bash
    git clone https://github.com/SemIdea/labelai.git
    ```
 
 2. Navigate to the project directory
+
    ```bash
    cd labelai
    ```
 
 3. Install dependencies
+
    ```bash
    npm install
    # or
@@ -67,6 +75,7 @@ Developed as a personal challenge to explore object recognition, LabelAi address
 ## Contributing
 
 We welcome contributions to LabelAi. Developers can support the project by:
+
 - Reporting bugs
 - Suggesting features
 - Submitting pull requests
@@ -81,6 +90,7 @@ Copyright (c) 2019-present, Piotr Skalski
 ## Contact
 
 For questions, support, or collaboration, reach out via Discord:
-- Discord: semideia_
+
+- Discord: semideia\_
 
 [1]: ./LICENSE
