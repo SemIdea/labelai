@@ -4,7 +4,7 @@
 
 LabelAi is a web-based, client-side object recognition labeling tool designed to streamline machine learning model development. This open-source platform provides developers and machine learning enthusiasts with an intuitive interface for image labeling and model training.
 
-Website: [LabelAi](https://labelai-blush.vercel.app/)
+Website: [LabelAi](https://labelai-ivory.vercel.app/)
 
 ## Features
 
